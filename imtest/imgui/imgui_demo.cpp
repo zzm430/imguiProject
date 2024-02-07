@@ -273,7 +273,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
     // Examples Apps (accessible from the "Examples" menu)
     static bool show_app_main_menu_bar = false;
-    static bool show_app_console = false;
+    static bool show_app_console = true;
     static bool show_app_custom_rendering = false;
     static bool show_app_dockspace = false;
     static bool show_app_documents = false;
@@ -285,7 +285,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     static bool show_app_constrained_resize = false;
     static bool show_app_fullscreen = false;
     static bool show_app_long_text = false;
-    static bool show_app_window_titles = false;
+    static bool show_app_window_titles = true;
 
     if (show_app_main_menu_bar)       ShowExampleAppMainMenuBar();
     if (show_app_dockspace)           ShowExampleAppDockSpace(&show_app_dockspace);     // Process the Docking app first, as explicit DockSpace() nodes needs to be submitted early (read comments near the DockSpace function)

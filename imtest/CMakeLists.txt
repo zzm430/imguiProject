@@ -15,5 +15,6 @@ include_directories(implot)
 
 file(GLOB IMGUI_SOURCES "imgui/*.cpp")
 file(GLOB IMPLOT_SOURCES "implot/*.cpp")
-add_executable(imtest main2.cpp ${IMGUI_SOURCES} ${IMPLOT_SOURCES})
+add_executable(imtest main2.cpp ${IMGUI_SOURCES} ${IMPLOT_SOURCES}
+)
 target_link_libraries(${PROJECT_NAME} GL GLU glfw3 X11 Xxf86vm Xrandr pthread Xi dl Xinerama Xcursor)
