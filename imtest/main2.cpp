@@ -27,7 +27,7 @@ std::vector<TableRow> tableViewData = {
 int main() {
     // 初始化glfw和opengl上下文
     glfwInit();
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "ImGui Canvas Instance", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "OFFLINE PATH PLANNING FOR TRACTORS", NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // 启用垂直同步
 
@@ -52,6 +52,10 @@ int main() {
     bool show_routing = false;
     bool show_keyptcoords = false;
     bool show_outerboundary = false;
+    bool show_curveDataAttr = false;
+
+    static float ridgeAndCurveIndex[2] = { 0.0f, 0.0f };
+
 
     std::vector<std::vector<double>>  storage_keypts;
     std::vector<std::vector<double>>  storage_routing;
@@ -122,6 +126,15 @@ int main() {
                 if (ImGui::MenuItem("Cut", "CTRL+X")) {}
                 if (ImGui::MenuItem("Copy", "CTRL+C")) {}
                 if (ImGui::MenuItem("Paste", "CTRL+V")) {}
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("CurveDataShow"))
+            {
+                if (ImGui::MenuItem("CurveDataAttr", NULL, show_curveDataAttr)) {
+                    show_curveDataAttr = !show_curveDataAttr; // 切换矩形的绘制状态
+                }
+
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
@@ -315,6 +328,10 @@ int main() {
                                        1.0f);
                 }
             }
+
+            if(show_curveDataAttr){
+
+            }
         }
 
         // 结束绘制
@@ -351,9 +368,11 @@ int main() {
         }
 
         ImGui::End();
-        
+
         ImGui::Begin("debug data show");
-        ImGui::Text("TableView Data:");
+        ImGui::Text("program Data:");
+        // 在ImGui窗口中创建两个输入框
+        ImGui::InputFloat2("ridge and curveIndex", ridgeAndCurveIndex);
         ImGui::End();
 
 
