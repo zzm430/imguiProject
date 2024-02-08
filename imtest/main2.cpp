@@ -10,6 +10,8 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include "implot.h"
+#include "math.h"
 
 // 数据结构定义
 struct TableRow {
@@ -34,6 +36,7 @@ int main() {
     // 初始化Dear ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -53,9 +56,12 @@ int main() {
     bool show_keyptcoords = false;
     bool show_outerboundary = false;
     bool show_curveDataAttr = false;
+    bool show_drawPolygon = false;
+    bool deleteAllPolygon = false;
 
     static float ridgeAndCurveIndex[2] = { 0.0f, 0.0f };
 
+    std::vector<ImVec2> polygonVertices;
 
     std::vector<std::vector<double>>  storage_keypts;
     std::vector<std::vector<double>>  storage_routing;
@@ -64,7 +70,6 @@ int main() {
     // 主循环
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-
 
         // 渲染Dear ImGui
         ImGui_ImplOpenGL3_NewFrame();
@@ -137,6 +142,20 @@ int main() {
 
                 ImGui::EndMenu();
             }
+
+            if(ImGui::BeginMenu("PolygonDrawShow")){
+
+                if(ImGui::MenuItem("PolygonDrawShow", NULL, show_drawPolygon)){
+                    show_drawPolygon  = !show_drawPolygon;
+                }
+
+                //删除画布所有东西
+                if (ImGui::MenuItem("deleteAllPolygon", NULL, deleteAllPolygon)) {
+                    show_drawPolygon = false;
+                    polygonVertices.clear();
+                }
+                ImGui::EndMenu();
+            }
             ImGui::EndMainMenuBar();
         }
 
@@ -204,22 +223,30 @@ int main() {
         if(draw_list){
             // 绘制多边形
             if(show_polygon){
-                ImVec2 scaled_points[4] = {{poly_points[0].x * canvas_scale, poly_points[0].y * canvas_scale},
+                ImVec2 scaled_points[4] = {{poly_points[0].x * canvas_scale,poly_points[0].y * canvas_scale},
                                            {poly_points[1].x * canvas_scale, poly_points[1].y * canvas_scale},
                                            {poly_points[2].x * canvas_scale, poly_points[2].y * canvas_scale},
                                            {poly_points[3].x * canvas_scale, poly_points[3].y * canvas_scale}};
 
-                draw_list->AddLine(ImVec2(canvas_pos.x + scaled_points[0].x, canvas_pos.y + scaled_points[0].y),
-                                   ImVec2(canvas_pos.x + scaled_points[1].x, canvas_pos.y + scaled_points[1].y),
+                draw_list->AddLine(ImVec2(canvas_pos.x + scaled_points[0].x,
+                                          canvas_pos.y + scaled_points[0].y),
+                                   ImVec2(canvas_pos.x + scaled_points[1].x,
+                                          canvas_pos.y + scaled_points[1].y),
                                    IM_COL32(255, 0, 0, 255));
-                draw_list->AddLine(ImVec2(canvas_pos.x + scaled_points[1].x, canvas_pos.y + scaled_points[1].y),
-                                   ImVec2(canvas_pos.x + scaled_points[2].x, canvas_pos.y + scaled_points[2].y),
+                draw_list->AddLine(ImVec2(canvas_pos.x + scaled_points[1].x,
+                                          canvas_pos.y + scaled_points[1].y),
+                                   ImVec2(canvas_pos.x + scaled_points[2].x,
+                                          canvas_pos.y + scaled_points[2].y),
                                    IM_COL32(255, 0, 0, 255));
-                draw_list->AddLine(ImVec2(canvas_pos.x + scaled_points[2].x, canvas_pos.y + scaled_points[2].y),
-                                   ImVec2(canvas_pos.x + scaled_points[3].x, canvas_pos.y + scaled_points[3].y),
+                draw_list->AddLine(ImVec2(canvas_pos.x + scaled_points[2].x,
+                                          canvas_pos.y + scaled_points[2].y),
+                                   ImVec2(canvas_pos.x + scaled_points[3].x,
+                                          canvas_pos.y + scaled_points[3].y),
                                    IM_COL32(255, 0, 0, 255));
-                draw_list->AddLine(ImVec2(canvas_pos.x + scaled_points[3].x, canvas_pos.y + scaled_points[3].y),
-                                   ImVec2(canvas_pos.x + scaled_points[0].x, canvas_pos.y + scaled_points[0].y),
+                draw_list->AddLine(ImVec2(canvas_pos.x + scaled_points[3].x,
+                                          canvas_pos.y + scaled_points[3].y),
+                                   ImVec2(canvas_pos.x + scaled_points[0].x,
+                                          canvas_pos.y + scaled_points[0].y),
                                    IM_COL32(255, 0, 0, 255));
 
                 // 显示多边形顶点的坐标
@@ -332,6 +359,38 @@ int main() {
             if(show_curveDataAttr){
 
             }
+
+            if(show_drawPolygon){
+                //绘制一个透明的按钮覆盖整个画布区域，不过鼠标点击事件
+                ImGui::InvisibleButton("Canvas", canvas_size);
+
+                // 当InvisibleButton被按下（即鼠标点击时），记录顶点
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    ImVec2 mouse_pos = ImGui::GetMousePos();
+                    ImVec2 clicked_pos = ImVec2(mouse_pos.x - canvas_pos.x,
+                                                mouse_pos.y - canvas_pos.y); // 转换为相对于画布的坐标
+                    polygonVertices.push_back(clicked_pos);
+                }
+
+               // 绘制多边形的每条边
+                for (size_t i = 0; i < polygonVertices.size(); ++i) {
+                    ImVec2 p1 = ImVec2(canvas_pos.x + polygonVertices[i].x, canvas_pos.y + polygonVertices[i].y);
+                    ImVec2 p2 = ImVec2(canvas_pos.x + polygonVertices[(i+1) % polygonVertices.size()].x,
+                                       canvas_pos.y + polygonVertices[(i+1) % polygonVertices.size()].y);
+                    draw_list->AddLine(p1, p2, IM_COL32(139,119,101, 255), 2.0f);
+                }
+
+                // 显示每个顶点的坐标
+                for (size_t i = 0; i < polygonVertices.size(); ++i) {
+                    ImVec2 p = ImVec2(canvas_pos.x + polygonVertices[i].x,
+                                      canvas_pos.y + polygonVertices[i].y);
+                    std::string coordText = "(" + std::to_string((int)polygonVertices[i].x)
+                            + ", " + std::to_string((int)polygonVertices[i].y) + ")";
+                    draw_list->AddText(p,
+                                       IM_COL32(139,119,101, 255),
+                                       coordText.c_str());
+                }
+            }
         }
 
         // 结束绘制
@@ -346,7 +405,8 @@ int main() {
         ImGui::Text("TableView Data:");
 
        // 使用Table控件展示tableView的数据
-        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+        if (ImGui::BeginTable("table1", 3,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
         {
             // 设置表头
             ImGui::TableSetupColumn("Column 1");
@@ -373,6 +433,20 @@ int main() {
         ImGui::Text("program Data:");
         // 在ImGui窗口中创建两个输入框
         ImGui::InputFloat2("ridge and curveIndex", ridgeAndCurveIndex);
+        if (ImPlot::BeginPlot("Curvature data show"))
+        {
+            // 将数据传递给 ImPlot，并绘制折线图
+            float xs[100], ys[100];
+            for (int i = 0; i < 100; ++i)
+            {
+                xs[i] = i * 0.1f;
+                ys[i] = sin(xs[i]);
+            }
+            ImPlot::PlotLine("Curvature", xs, ys, 100);
+
+            // 结束 ImPlot 绘制
+            ImPlot::EndPlot();
+        }
         ImGui::End();
 
 
@@ -396,6 +470,8 @@ int main() {
         glfwSwapBuffers(window);
     }
 
+    // 清理 ImPlot 资源
+    ImPlot::DestroyContext();
     // 清理资源
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

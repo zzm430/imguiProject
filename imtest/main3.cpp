@@ -6,6 +6,9 @@
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
 
+#include "implot.h"
+#include "math.h"
+
 void RenderTableView()
 {
     // 模拟一些数据
@@ -59,6 +62,8 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 410");
 
+    ImPlot::CreateContext();
+
     // 渲染循环
     while (!glfwWindowShouldClose(window))
     {
@@ -69,8 +74,25 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        bool test = true;
-        ImGui::ShowDemoWindow(&test);
+//        bool testm = true;
+//        ImPlot::ShowDemoWindow(&testm);
+        if (ImPlot::BeginPlot("Curvature data show"))
+        {
+            // 将数据传递给 ImPlot，并绘制折线图
+            float xs[100], ys[100];
+            for (int i = 0; i < 100; ++i)
+            {
+                xs[i] = i * 0.1f;
+                ys[i] = sin(xs[i]);
+            }
+            ImPlot::PlotLine("Curvature", xs, ys, 100);
+
+            // 结束 ImPlot 绘制
+            ImPlot::EndPlot();
+        }
+
+//        bool test = true;
+//        ImGui::ShowDemoWindow(&test);
 
 //        // 渲染 TableView
 //        RenderTableView();
@@ -87,6 +109,8 @@ int main()
         glfwSwapBuffers(window);
     }
 
+    // 清理 ImPlot 资源
+    ImPlot::DestroyContext();
     // 清理 ImGui 相关资源
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
